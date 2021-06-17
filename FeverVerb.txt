@@ -1,0 +1,30 @@
+!pip install --no-cache-dir scispacy
+!pip install --no-cache-dir https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_scibert-0.4.0.tar.gz
+!pip install --no-cache-dir spacy-transformers
+import en_core_sci_scibert
+nlp = en_core_sci_scibert.load()
+#Scibert yerine farkli bir model seçilebilir.
+def add_mesh_verb (meshTerms, sentence):
+  doc=nlp(sentence)
+  lst = []
+  mesh_list=meshTerms
+  seen = set()
+  for token in doc:
+    if ((token.pos_ =='NOUN' or token.pos_ == 'PROPN')  and token.head.pos_=='VERB' and token.text in mesh_list ):
+      if token.head.lemma_!='be' and token.head.lemma_!= 'have' :
+        print(-1)
+        lst.append(token.head.lemma_)
+    if (token.pos_ =='VERB' and token.dep_ !='case' and token.dep_ !='prep' and token.head.pos_=='NOUN' and token.head.text in mesh_list):
+      if token.lemma_!='be' and token.lemma_!='have':
+        lst.append(token.lemma_)
+    if (token.dep_=='compound' and (token.head.pos_=='NOUN' or token.head.pos_=='PROPN') and token.head.head.pos_=='VERB' and token.text in mesh_list):
+      if token.head.head.lemma_!='be' and token.head.head.lemma_!='have':
+        lst.append(token.head.head.lemma_)
+    if ((token.pos_ =='NOUN' or token.pos_ == 'PROPN')  and token.head.pos_=='VERB' and token.head.dep_=='conj' and token.head.head.pos_=='VERB'  and token.text in mesh_list ):
+      if token.head.head.lemma_ !='be' and token.head.head.lemma_ !='have': 
+        lst.append(token.head.head.lemma_)
+  lst = [x for x in lst if x.lower() not in seen and not seen.add(x.lower())]
+  for token in doc:
+    if token.tag_ =='NNP':
+      lst.append(str(token))
+  return lst
