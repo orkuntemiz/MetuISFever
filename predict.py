@@ -86,6 +86,7 @@ import pandas as pd
 
 dataset_path = "dev.jsonl"
 output_path = dataset_path.replace(".jsonl", "_predictions.jsonl")
+evaluation_path = dataset_path.replace(".jsonl", "_evaluation.jsonl")
 
 with open(dataset_path, "r", encoding="utf-8") as f:
     dataset = [json.loads(line) for line in f]
@@ -734,6 +735,9 @@ EVIDENCE_RETRIEVAL = "depth"
 with open(output_path, 'w', encoding='utf-8') as f:
     f.write('{"id": "", "predicted_label": "", "predicted_evidence": ""}\n')
 
+if EVAL and os.path.isfile(evaluation_path):
+    os.remove(evaluation_path)
+
 from tqdm import tqdm
 for data in tqdm(dataset[:100]):
     
@@ -795,6 +799,20 @@ for data in tqdm(dataset[:100]):
     with open(output_path, 'a', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, indent=None)
         f.write("\n")
+
+    if EVAL and data["label"] and data["evidence"]:
+
+        evaluation = {"id": data["id"], "claim": data["claim"], "label": data["label"],
+                      "predicted_label": predicted_label,
+                      "evidence": data["evidence"], "predicted_evidence": []}
+
+        for evidence in evidences:
+            evidence_str = evidence[0] + "_" + evidence[1] + "_" + evidence[2]
+            evaluation["predicted_evidence"].append(evidence_str)
+
+        with open(evaluation_path, 'a', encoding='utf-8') as f:
+            json.dump(evaluation, f, ensure_ascii=False, indent=None)
+            f.write("\n")
 
 #     print(claim)
 #     print(output)
